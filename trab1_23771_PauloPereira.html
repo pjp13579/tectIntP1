@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+	<meta charset="utf-8">
+	<title>Trab1 - 23771 - Paulo Pereira</title>
+	<style>
+		body {
+			width: 100vw;
+			height: 100vh;
+			user-select: none;
+			background-image: url("http://i1.hdslb.com/bfs/archive/524e460685d7f3549321297f4f3cef4b55a6c0f2.jpg");
+			background-size: cover;
+			display: grid;
+			place-items: center;
+			overflow: hidden;
+		}
+
+		input[type=range] {
+			cursor: pointer;
+			accent-color: rgb(197, 255, 249);
+		}
+
+		input[type=button] {
+			cursor: pointer;
+			border: none;
+			border-radius: 1rem;
+			width: 150px;
+			height: 26px;
+			color: brown;
+		}
+
+		.spanInputValor {
+			font-size: 17px;
+		}
+
+		.valorInput {
+			background-color: rgba(255, 255, 255, 0);
+			border: none;
+			width: 60px;
+			color: aliceblue;
+			font-size: 21px;
+		}
+
+		#main {
+			display: flex;
+			width: 800px;
+			height: 610px;
+			background-image: linear-gradient(270deg, rgb(89, 85, 85), rgba(89, 85, 85, 0.54), rgba(255, 255, 255, 0));
+			border-radius: 1rem;
+			padding: 10px;
+		}
+
+		#options {
+			padding-left: 10px;
+		}
+	</style>
+
+	<script>
+
+		var valoresAleatorios = true
+		var corAleatoria = true
+
+		//inicialização
+		function inic() {
+			canvas = document.getElementById("paintMeMommy").getContext("2d")
+			//faz render inicial do canvas
+			update()
+		}
+
+		//atualiza o canvas e o texto dos repetivos cursores, sempre que houver uma alteração nos controlos
+		function update() {
+			//limpa o canvas
+			canvas.clearRect(0, 0, 600, 600)
+
+			//lê os valores dos cursores
+			horizontal = parseFloat(refId("rangeHorizontal").value)
+			vertical = parseFloat(refId("rangeVertical").value)
+			dimensao = parseFloat(refId("rangeDimensao").value)
+			cardinalidade = parseFloat(refId("rangeCardinalidade").value)
+			densidade = parseFloat(refId("rangeDensidade").value)
+			valorDoDado = parseFloat(refId("rangeValorDoDado").value)
+			corDado = refId("textCorDoDado").value
+			corPintas = refId("textValorDasPintas").value
+
+			//atribui os valores dos cursores aos respetivos campos de texto
+			refId("textHorizontal").value = horizontal
+			refId("textVertical").value = vertical
+			refId("textDimensao").value = dimensao
+			refId("textCardinalidade").value = cardinalidade
+			refId("textDensidade").value = densidade
+			refId("textValorDoDado").value = valorDoDado
+
+			//cria uma grelha com n colunas, dado pelo valor de cardinalidade. A grelha é sub-dividida n vezes a partir do tamanho da dimensão
+			gridCell = dimensao / cardinalidade
+			//cada forma, é o tamanho da célula da grelha * uma percentagem relativa ao tamanho da propria célula 
+			dimensaoForma = densidade * gridCell
+			//pinta tabela n*n com dados
+			for (var i = 0; i < cardinalidade; i++)
+				for (var j = 0; j < cardinalidade; j++)
+					dadoJogar(canvas, valorDoDado, horizontal + j * gridCell, vertical + i * gridCell, dimensaoForma, corDado, corPintas, corAleatoria, valoresAleatorios)
+		}
+
+		//atualiza o canvas e os cursores sempre que houver uma alteração no texto dos cursores
+		function updateText() {
+			//lê os valores dos campos de texto(que representam os respetivos cursores(input type="range"))
+			var horiz = refId("textHorizontal").value
+			var vert = refId("textVertical").value
+			var dim = refId("textDimensao").value
+			var card = refId("textCardinalidade").value
+			var den = refId("textDensidade").value
+			var val = refId("textValorDoDado").value
+			corDado = refId("textCorDoDado").value
+			corPintas = refId("textValorDasPintas").value
+
+			//atribui os valores lidos, aos respetivos cursores
+			refId("rangeHorizontal").value = horiz
+			refId("rangeVertical").value = vert
+			refId("rangeDimensao").value = dim
+			refId("rangeCardinalidade").value = card
+			refId("rangeDensidade").value = den
+			refId("rangeValorDoDado").value = val
+
+			update()
+		}
+
+		//******** input/output ********
+
+
+		//********* processos **********			
+		//estabelece um percurso para um retângulo de vértices redondos, dados, o contexto gráfico, as coordenadas de referência, a largura, a altura e o raio de curvatura dos vértices
+		function pathRectRound(cGraf, x, y, larg, alt, raio) {
+			//coordenadas de referência
+			var X0 = x, X1 = x + raio, X2 = x + larg - raio, X3 = x + larg;
+			var Y0 = y, Y1 = y + raio, Y2 = y + alt - raio, Y3 = y + alt;
+			//ponto incial do percurso
+			cGraf.moveTo(X1, Y0);
+			//descrição do percurso
+			cGraf.lineTo(X2, Y0); cGraf.arcTo(X3, Y0, X3, Y1, raio);
+			cGraf.lineTo(X3, Y2); cGraf.arcTo(X3, Y3, X2, Y3, raio);
+			cGraf.lineTo(X1, Y3); cGraf.arcTo(X0, Y3, X0, Y2, raio);
+			cGraf.lineTo(X0, Y1); cGraf.arcTo(X0, Y0, X1, Y0, raio);
+		}
+
+		//mostra um dado de jogar com os seguintes argumentos: o contexto gráfico, o valor do dado (número de pintas), as coordenadas de referência, a dimensão do dado, a cor do dado, a cor das pintas, a opção boleana de permissão para cores aleatórias (para o dado e para as pintas) e a opção boleana de permissão para valor aleatório dos dados. São determinações para a forma, o raio de curvatura dos vértices, que será de 1/4 da dimensão do dado, e o raio das pintas, que será de 1/10 da dimensão do dado. São determinações para os contornos (para o dado e para as pintas), a respetiva cor que será negra e a respetiva espessura que será de 1/40 da dimensão do dado.
+		function dadoJogar(cGraf, valor, x, y, dim, corDado, corPintas, permiteCoresAleat, permiteValorAleat) {
+
+			//raio de curvatura dos vértices, raio das pintas, espessura e cor das linhas de contorno
+			rc = 0.25 * dim, rp = 0.10 * dim, espLin = dim / 40, corLin = "#000000";
+			//esquema das pintas
+			var PINTAS = ["0001000", "1000001", "0101010", "1100011", "1101011", "1110111"];
+			//coordenadas horizontais e verticais dos centros das pintas
+			var X1 = x + rc, X2 = x + dim / 2, X3 = x + dim - rc;
+			var Y1 = y + rc, Y2 = y + dim / 2, Y3 = y + dim - rc;
+			//lista das 7 posições possíveis para os centros das pintas, segundo um array de objetos {cx, cy}
+			var CCP = [
+				{ cx: X1, cy: Y1 }, { cx: X3, cy: Y1 },
+				{ cx: X1, cy: Y2 }, { cx: X2, cy: Y2 }, { cx: X3, cy: Y2 },
+				{ cx: X1, cy: Y3 }, { cx: X3, cy: Y3 }
+			];
+			//cor e espessura das linhas de contorno
+			cGraf.strokeStyle = corLin; cGraf.lineWidth = espLin;
+			//cor estabelecida para o dado ou cor aleatória, se autorizada
+			if (permiteCoresAleat) cGraf.fillStyle = corAleat(); else cGraf.fillStyle = corDado;
+			//pinta o corpo do dado
+			cGraf.beginPath();
+			pathRectRound(cGraf, x, y, dim, dim, rc);
+			cGraf.fill(); cGraf.stroke();
+			//cor estabelecida para as pintas ou cor aleatória, se autorizada
+			if (permiteCoresAleat) cGraf.fillStyle = corAleat(); else cGraf.fillStyle = corPintas;
+			//valor do dado é aleatório, se autorizado
+			if (permiteValorAleat) valor = 1 + Math.floor(6 * Math.random());
+			//pinta as pintas (7 posições possíveis) de acordo com a respetiva cor
+			for (var i = 0; i < 7; i++) {
+				if (parseFloat(PINTAS[valor - 1].charAt(i))) {
+					cGraf.beginPath();
+					cGraf.arc(CCP[i].cx, CCP[i].cy, rp, 0, 2 * Math.PI);
+					cGraf.fill(); cGraf.stroke();
+				}
+			}
+		}
+
+
+		//gera uma referência de um objeto do interface, dado o seu ID
+		function refId(idObj) {
+			return document.getElementById(idObj);
+		}
+
+		//coloca o conteúdo indicado no objeto contentor indicado pelo seu ID
+		function outId(idObj, cont) {
+			document.getElementById(idObj).innerHTML = cont;
+		}
+
+		//gera uma cor aleatória
+		function corAleat() {
+			//sorteia as componentes RGB (entre 0 e 255 para cada uma)
+			var r = Math.floor(256 * Math.random());
+			var g = Math.floor(256 * Math.random());
+			var b = Math.floor(256 * Math.random());
+			//retorna a cor, na forma da função CSS "rgb()"
+			return "rgb(" + r + "," + g + "," + b + ")";
+		}
+
+		//a seguinte função inverte o valor boleano do valor do dado, para ser gerado aleatoriamente ou ser o utilizador a definir os mesmos
+		function valorAleatorios() {
+			valoresAleatorios = !valoresAleatorios
+			update()
+			valoresAleatorios == true ? refId("textValoresAleatorios").innerHTML = "Yes" : refId("textValoresAleatorios").innerHTML = "No"
+		}
+
+		//a seguinte função inverte o valor boleano da cor dos dados, para ser gerada aleatoriamente ou ser o utilizador a definir as mesmas
+		function coresAleatorias() {
+			corAleatoria = !corAleatoria
+			update()
+			corAleatoria == true ? refId("textCoresAleatorias").innerHTML = "Yes" : refId("textCoresAleatorias").innerHTML = "No"
+		}			
+	</script>
+</head>
+
+<body onload="inic()">
+	<div id="main">
+		<canvas id="paintMeMommy" width="600" height="600"></canvas>
+		<div id="options">
+			<span class="spanInputValor">Horizontal: </span>&nbsp;&nbsp;
+			<input id="textHorizontal" type="text" class="valorInput" oninput="updateText()"><br>
+			<input id="rangeHorizontal" type="range" oninput="update()" min=-200 max=500 value=0>
+
+			<span class="spanInputValor">Vertical: </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<input id="textVertical" type="text" class="valorInput" oninput="updateText()"><br>
+			<input id="rangeVertical" type="range" oninput="update()" min=-200 max=500 value=0>
+
+			<span class="spanInputValor">Dimensão: </span>&nbsp;
+			<input id="textDimensao" type="text" class="valorInput" oninput="updateText()"><br>
+			<input id="rangeDimensao" type="range" oninput="update()" min=50 max=1000 value=600>
+
+			<span class="spanInputValor">Cardinalidade: </span>
+			<input id="textCardinalidade" type="text" class="valorInput" oninput="updateText()"><br>
+			<input id="rangeCardinalidade" type="range" oninput="update()" min=1 max=120 value=8>
+
+			<span class="spanInputValor">Densidade: </span>&nbsp;
+			<input id="textDensidade" type="text" class="valorInput" oninput="updateText()"><br>
+			<input id="rangeDensidade" type="range" oninput="update()" step=.05 min=.1 max=2 value=.8><br><br>
+
+
+			<span class="spanInputValor">Valor do dado: </span>
+			<input id="textValorDoDado" type="text" class="valorInput" min=1 max=6 oninput="updateText()"><br>
+			<input id="rangeValorDoDado" type="range" oninput="update()" min=1 max=6 value=3><br><br>
+
+			<span class="spanInputValor">Cor do dado: </span>
+			<input id="textCorDoDado" type="color" oninput="update()" class="valorInput" value="#C2Fa3F"><br>
+
+			<span class="spanInputValor">Cor das pintas: </span>
+			<input id="textValorDasPintas" type="color" oninput="update()" class="valorInput"
+				value="#f0b0a0"><br><br><br>
+
+			<input type="button" onclick="valorAleatorios()" value="valores aleatórios?"><br>
+			<span id="textValoresAleatorios" style="color: aliceblue;">Yes</span>
+
+			<br><br>
+			<input type="button" onclick="coresAleatorias()" value="cores aleatórias?"><br>
+			<span id="textCoresAleatorias" style="color: aliceblue;">Yes</span>
+
+		</div>
+	</div>
+</body>
+
+</html>
